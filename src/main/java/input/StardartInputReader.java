@@ -5,10 +5,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 
-public class StardartInputReader extends InputReader {
+public class StardartInputReader implements InputReader {
+
+    private static final String EXIT_COMMAND = "exit";
+
+    private final BlockingQueue<String> logQueue;
 
     public StardartInputReader(BlockingQueue<String> logQueue) {
-        super(logQueue);
+        this.logQueue = logQueue;
     }
 
 
@@ -21,10 +25,11 @@ public class StardartInputReader extends InputReader {
                         //  We do not want to close System.in
                     }
                 })) {
-
-            this.readFile(reader);
-
-        } catch (IOException e) {
+            String line;
+            while (!(line = reader.readLine()).equals(EXIT_COMMAND)) {
+                logQueue.put(line);
+            }
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
