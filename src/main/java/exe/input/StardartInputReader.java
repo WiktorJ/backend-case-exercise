@@ -1,11 +1,11 @@
-package input;
+package exe.input;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 
-public class StardartInputReader implements InputReader {
+public class StardartInputReader implements exe.input.InputReader {
 
     private static final String EXIT_COMMAND = "exit";
 
