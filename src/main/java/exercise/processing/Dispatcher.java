@@ -4,7 +4,6 @@ import exercise.*;
 import exercise.domain.LogEntry;
 import exercise.domain.TraceRoot;
 import exercise.domain.TraceStateHolder;
-import exercise.output.FileOutputWriter;
 import exercise.stats.StatisticsHolder;
 import exercise.utils.Utils;
 import org.slf4j.Logger;
@@ -22,6 +21,11 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * This class takes raw logs from reader and transforms them into LogEntries.
+ * It also checks for orphan entries and tries to compensate for lack of order in some cases (waits with assembly
+ * for some time to catch all entries that appeared after "null" entry from their trace)
+ */
 public class Dispatcher implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
@@ -30,21 +34,29 @@ public class Dispatcher implements Runnable {
     private static long NULL_THRESHOLD = ConfigHolder.getConfig().getInt("nullThreshold", 300);
 
     private final NavigableMap<Long, List<String>> orphanMap;
-    private final ConcurrentHashMap<String, TraceStateHolder> map;
+    private final ConcurrentHashMap<String, TraceStateHolder> tracesMap;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
     private final BlockingQueue<TraceRoot> outputQueue;
     private final BlockingQueue<String> inputQueue;
     private volatile boolean stop = false;
     private volatile boolean stopGracefully = true;
 
+    /**
+     *
+     * @param orphanMap Mapping "timestamp" -> "List of traceId from this time".
+     * @param tracesMap Map "traceId" -> "all services calls".
+     * @param scheduledThreadPoolExecutor Executor for "Assemblers".
+     * @param outputQueue Queue for "Assemblers".
+     * @param inputQueue Queue where raw entries arrive.
+     */
     public Dispatcher(NavigableMap<Long, List<String>> orphanMap,
-                      ConcurrentHashMap<String, TraceStateHolder> map,
+                      ConcurrentHashMap<String, TraceStateHolder> tracesMap,
                       ScheduledThreadPoolExecutor scheduledThreadPoolExecutor,
                       BlockingQueue<TraceRoot> outputQueue,
                       BlockingQueue<String> inputQueue
     ) {
         this.orphanMap = orphanMap;
-        this.map = map;
+        this.tracesMap = tracesMap;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
         this.outputQueue = outputQueue;
         this.inputQueue = inputQueue;
@@ -59,6 +71,8 @@ public class Dispatcher implements Runnable {
                 logger.info("Interruption while writing to file, stop = {}", stop, e);
             }
         }
+        //If stop signal was received but there are still some entries in the queue
+        //they should be processed.
         if (stopGracefully) {
             ArrayList<String> logs = new ArrayList<>(inputQueue.size());
             inputQueue.drainTo(logs);
@@ -77,27 +91,41 @@ public class Dispatcher implements Runnable {
 
     private void dispatchEntry(LogEntry logEntry) {
 
+        //Each time entry arrive we log its timestamp in this map. Later it's used to check whether
+        //particular entry was in the memory long enough to be considered an orphan.
         orphanMap.computeIfAbsent(logEntry.getEndEpoch(), (key) -> new CopyOnWriteArrayList<>()).add(logEntry.getTraceId());
 
+
+        //New entry is registered under traceId
         TraceStateHolder stateHolder =
-                map.computeIfAbsent(logEntry.getTraceId(), (key) -> new TraceStateHolder(new ConcurrentHashMap<>(), false, logEntry.getEndEpoch()));
+                tracesMap.computeIfAbsent(logEntry.getTraceId(), (key) -> new TraceStateHolder(new ConcurrentHashMap<>(), false, logEntry.getEndEpoch()));
+
+        //Since it's not synchronized it's possible that we won't get latest timestamp.
+        //This information is only used to determine orphan entries and doesn't have to be 100% accurate.
         if (stateHolder.getLatestEndTimestamp() < logEntry.getEndEpoch()) {
             stateHolder.setLatestEndTimestamp(logEntry.getEndEpoch());
         }
+
+        //New entry is registered under caller span id. Thread safe collection is used because it's traversed later in Assembler.
         stateHolder.getEntries().computeIfAbsent(logEntry.getCallerSpan(), (key) -> new CopyOnWriteArrayList<>()).add(logEntry);
 
+        //When "null" entry arrive, assembly process is scheduled. Also Flag that null arrived is set, so the entries w
+        //will not be considered orphans.
         if (logEntry.getCallerSpan().equals("null")) {
             stateHolder.setNullArrived(true);
-            scheduledThreadPoolExecutor.schedule(new Assembler(outputQueue, logEntry.getTraceId(), map), NULL_THRESHOLD, TimeUnit.MILLISECONDS);
+            scheduledThreadPoolExecutor.schedule(new Assembler(outputQueue, logEntry.getTraceId(), tracesMap), NULL_THRESHOLD, TimeUnit.MILLISECONDS);
         }
 
+        //Here we take all the "suspectedOrphans". Those are all the entries Older then given threshold then currently processed entry.
         SortedMap<Long, List<String>> suspectedOrphans = orphanMap.tailMap(logEntry.getEndEpoch() - ORPHANS_THRESHOLD);
         for (Map.Entry<Long, List<String>> entry : suspectedOrphans.entrySet()) {
             for (String traceId : entry.getValue()) {
-                TraceStateHolder holder = map.get(traceId);
+                TraceStateHolder holder = tracesMap.get(traceId);
+                //Entry might have been already assembled, scheduled for assembly, or there were newer entries with the same trace id.
+                //Other wise entry is an orphan.
                 if (holder != null && !holder.isNullArrived() && logEntry.getEndEpoch() - ORPHANS_THRESHOLD > holder.getLatestEndTimestamp()) {
                     StatisticsHolder.getInstance().reportOrphan(holder.getEntries().keySet(), traceId);
-                    map.remove(traceId);
+                    tracesMap.remove(traceId);
                 }
             }
             orphanMap.remove(entry.getKey());
@@ -117,10 +145,7 @@ public class Dispatcher implements Runnable {
 }
 
 /*
-            TODO: move to docs
-            This peace of code deals with entries that occur after "null" entry. It only tries to assemble
-            entries after newer than some trashold arrives. According to trace-comparator such functionality is not necessary,
-            but this is a way in which is could be accomplished.
+            An alternative way to deal with entries that arrive after "their null" entry. This one uses relative time.
             NavigableMap<Long, List<String>> nullMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
 
 
@@ -137,10 +162,11 @@ public class Dispatcher implements Runnable {
                 }
             }
             for (String traceId : toCombine) {
-                scheduledThreadPoolExecutor.execute(new Assembler(outputQueue, map.remove(traceId)));
+                scheduledThreadPoolExecutor.execute(new Assembler(outputQueue, tracesMap.remove(traceId)));
 
             \}
-        }*/
+}
+*/
 
 
 

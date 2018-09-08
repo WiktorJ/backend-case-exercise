@@ -6,7 +6,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-
+/**
+ * Class that hold all raw stats from the application.
+ * It uses pseud visitor patter to calculate statistics
+ * and later publish them.
+ */
 public class StatisticsHolder {
 
     private StatisticsHolder() {

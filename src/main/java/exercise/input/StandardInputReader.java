@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Simple reader that takes lines to process from stdin.
+ */
 public class StandardInputReader implements exercise.input.InputReader {
     private static Logger logger = LoggerFactory.getLogger(StandardInputReader.class);
 

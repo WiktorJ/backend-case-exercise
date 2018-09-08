@@ -6,6 +6,9 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * Class representing LogEntry.
+ */
 @Data
 @Builder
 public class LogEntry implements Serializable, Comparable<LogEntry> {

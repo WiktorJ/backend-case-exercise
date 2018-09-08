@@ -23,6 +23,10 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.*;
 
+
+/**
+ * Main entry point to the program. It parses arguments, creates all the collections and starts all the threads (Using executors).
+ */
 public class Main {
 
 
@@ -62,8 +66,8 @@ public class Main {
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp(
-                    "java -jar backend-case-exercise.jar -i path/to/input/file -o path/to/output/file",
-                    "If no file is specified, than standard input/output is used.",
+                    "java -jar target/backend-case-exercise-1.0-jar-with-dependencies.jar -i path/to/input/file -o path/to/output/file",
+                    "If no file is specified, than standard input/output is used. To finish program in stdin mode type 'exit'",
                     options,
                     "");
             System.exit(1);

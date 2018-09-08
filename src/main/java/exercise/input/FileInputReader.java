@@ -13,6 +13,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Simple reader that reads logs line by line.
+ */
 public class FileInputReader implements InputReader {
 
     private static Logger logger = LoggerFactory.getLogger(FileInputReader.class);

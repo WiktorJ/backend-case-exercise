@@ -1,8 +1,10 @@
 package exercise.domain;
 
-import exercise.domain.LogEntry;
 import lombok.Data;
 
+/**
+ * Class representing root of trace.
+ */
 @Data
 public class TraceRoot {
     private final String id;

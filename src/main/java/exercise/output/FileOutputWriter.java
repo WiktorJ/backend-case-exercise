@@ -19,6 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Simple file writer. Jackson is used to serialize LogEntries.
+ */
 public class FileOutputWriter extends OutputWriter {
 
     private static Logger logger = LoggerFactory.getLogger(FileOutputWriter.class);

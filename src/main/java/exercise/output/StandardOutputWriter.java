@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Simple stdout writer.
+ */
 public class StandardOutputWriter extends OutputWriter {
 
     private static Logger logger = LoggerFactory.getLogger(StandardOutputWriter.class);
