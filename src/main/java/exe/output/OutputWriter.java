@@ -15,7 +15,7 @@ public abstract class OutputWriter implements Runnable {
 
     /**
      * Writer will stop pooling from queue for new entries, however interrupt still must be called to ensure that the thread will exit.
-     * @param stopGracefully If true writer will try to finish writing remaining entries from queue
+     * @param stopGracefully If true writer will try to setStopFlag writing remaining entries from queue
      */
     public void setStopFlag(boolean stopGracefully) {
         this.stop = true;

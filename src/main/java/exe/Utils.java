@@ -14,11 +14,13 @@ public class Utils {
     public static LogEntry createDaoFromLog(String logEntry) {
         String[] s = logEntry.split(" ");
         // TODO: Handle zones?
+        LocalDateTime startTime  = LocalDateTime.parse(s[0],dtf);
         LocalDateTime endTime  = LocalDateTime.parse(s[1],dtf);
         return LogEntry.builder()
                 .start(s[0])
                 .end(s[1])
                 .endEpoch(endTime.toInstant(ZoneOffset.UTC).toEpochMilli())
+                .startEpoch(startTime.toInstant(ZoneOffset.UTC).toEpochMilli())
                 .traceId(s[2])
                 .service(s[3])
                 .callerSpan(s[4].split("->")[0])

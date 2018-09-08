@@ -17,6 +17,7 @@ public class LogEntry implements Serializable, Comparable<LogEntry> {
     private final String span;
     private final List<LogEntry> calls;
     private transient final Long endEpoch;
+    private transient final Long startEpoch;
     private transient final String traceId;
     private transient final String callerSpan;
 
@@ -26,6 +27,18 @@ public class LogEntry implements Serializable, Comparable<LogEntry> {
 
     @Override
     public int compareTo(LogEntry logEntry) {
-        return Long.compare(this.endEpoch, logEntry.endEpoch);
+        int compare = Long.compare(this.endEpoch, logEntry.endEpoch);
+        if (compare != 0) {
+            return compare;
+        }
+        compare = Long.compare(this.startEpoch, logEntry.startEpoch);
+        if (compare != 0) {
+            return compare;
+        }
+        compare = this.service.compareTo(logEntry.service);
+        if (compare != 0) {
+            return compare;
+        }
+        return this.span.compareTo(logEntry.span);
     }
 }

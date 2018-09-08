@@ -9,10 +9,10 @@ public class StardartInputReader implements exe.input.InputReader {
 
     private static final String EXIT_COMMAND = "exit";
 
-    private final BlockingQueue<String> logQueue;
+    private final BlockingQueue<String> inputQueue;
 
-    public StardartInputReader(BlockingQueue<String> logQueue) {
-        this.logQueue = logQueue;
+    public StardartInputReader(BlockingQueue<String> inputQueue) {
+        this.inputQueue = inputQueue;
     }
 
 
@@ -27,7 +27,7 @@ public class StardartInputReader implements exe.input.InputReader {
                 })) {
             String line;
             while (!(line = reader.readLine()).equals(EXIT_COMMAND)) {
-                logQueue.put(line);
+                inputQueue.put(line);
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

@@ -58,7 +58,7 @@ public class FileRead implements Runnable {
         //Tear Down
         executor.shutdown();
 
-        //Wait for all threads to finish
+        //Wait for all threads to setStopFlag
         while (!executor.isTerminated()) {
             //wait for infinity time
         }

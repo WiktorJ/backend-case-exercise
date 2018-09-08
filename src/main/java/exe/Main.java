@@ -17,16 +17,20 @@ public class Main {
 
     public static void main(String[] args) throws InterruptedException, IOException {
 //        todo: queue size parametrized
-        NavigableMap<String, Long> orphanMap = new ConcurrentSkipListMap<>();
-        NavigableMap<Long, List<String>> nullMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
-        ConcurrentHashMap<String, ConcurrentHashMap<String, List<LogEntry>>> map = new ConcurrentHashMap<>();
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1, new ThreadPoolExecutor.CallerRunsPolicy());
-        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(50000);
-
-
+        long startTime = System.nanoTime();
+        NavigableMap<Long, List<String>> orphanMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
+        ConcurrentHashMap<String, TraceStateHolder> map = new ConcurrentHashMap<>();
+        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
+        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor1 = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
+        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(1000);
+        BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(50);
+        Dispatcher dispatcher = new Dispatcher(orphanMap, map, scheduledThreadPoolExecutor, outputQueue, inputQueue);
+        scheduledThreadPoolExecutor1.execute(dispatcher);
+        scheduledThreadPoolExecutor1.execute(dispatcher);
+        scheduledThreadPoolExecutor1.execute(dispatcher);
+//
 //        InputReader inputReader = new StardartInputReader(lines);
-        InputReader inputReader = new FileInputReader(
-                orphanMap, nullMap, map, scheduledThreadPoolExecutor, outputQueue, "/home/wiktor/Downloads/large-log.txt");
+        InputReader inputReader = new FileInputReader("/home/wiktor/Downloads/large-log.txt", inputQueue);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(inputReader);
@@ -36,11 +40,17 @@ public class Main {
         executorService.execute(outputWriter);
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        dispatcher.setStopFlag();
+        scheduledThreadPoolExecutor1.shutdownNow();
+        scheduledThreadPoolExecutor1.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         scheduledThreadPoolExecutor.shutdown();
         scheduledThreadPoolExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         outputWriter.setStopFlag();
         executorService.shutdown();
         executorService.shutdownNow();
+        long endTime = System.nanoTime();
+
+        System.out.println("Duration: " + (endTime - startTime)/1000000 + "ms");
 
     }
 }

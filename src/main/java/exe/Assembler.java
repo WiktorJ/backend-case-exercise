@@ -1,6 +1,11 @@
 package exe;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,9 +14,9 @@ public class Assembler implements Runnable {
 
     private final BlockingQueue<TraceRoot> outputQueue;
     private String traceId;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, List<LogEntry>>> map;
+    private final ConcurrentHashMap<String, TraceStateHolder> map;
 
-    public Assembler(BlockingQueue<TraceRoot> outputQueue, String traceId, ConcurrentHashMap<String, ConcurrentHashMap<String, List<LogEntry>>> map) {
+    public Assembler(BlockingQueue<TraceRoot> outputQueue, String traceId, ConcurrentHashMap<String, TraceStateHolder> map) {
         this.outputQueue = outputQueue;
         this.traceId = traceId;
         this.map = map;
@@ -19,7 +24,7 @@ public class Assembler implements Runnable {
 
     @Override
     public void run() {
-        Map<String, List<LogEntry>> logMap = map.remove(traceId);
+        Map<String, List<LogEntry>> logMap = map.remove(traceId).getEntries();
         Queue<String> callerSpans = new LinkedList<>();
         callerSpans.offer("null");
         Optional<LogEntry> root = logMap.get("null").stream().findFirst();
@@ -51,5 +56,6 @@ public class Assembler implements Runnable {
         } else {
             //TODO: orphan?
         }
+
     }
 }

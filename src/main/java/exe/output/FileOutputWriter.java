@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exe.TraceRoot;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
@@ -40,6 +43,7 @@ public class FileOutputWriter extends OutputWriter {
                     //TODO: Handle
                     e.printStackTrace();
                 }
+
             }
             if (stopGracefully()) {
                 ArrayList<TraceRoot> logs = new ArrayList<>(logQueue.size());
