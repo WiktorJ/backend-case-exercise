@@ -16,7 +16,7 @@ Change this properties in pom.xml
 ```
 To appropriate version if java 10 is not available.
 
-##Overview
+## Overview
 
 Application consist four main parts:
 * `InputReader` - File or stdin
