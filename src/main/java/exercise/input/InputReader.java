@@ -1,4 +1,5 @@
-package exe.input;
+package exercise.input;
+
 
 public interface InputReader extends Runnable {
 

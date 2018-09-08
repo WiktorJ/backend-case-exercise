@@ -1,4 +1,4 @@
-package exe;
+package exercise;
 
 import lombok.Data;
 

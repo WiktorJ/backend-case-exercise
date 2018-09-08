@@ -1,11 +1,9 @@
-package exe;
+package exercise;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -20,6 +18,7 @@ public class LogEntry implements Serializable, Comparable<LogEntry> {
     private transient final Long startEpoch;
     private transient final String traceId;
     private transient final String callerSpan;
+    private transient int depth;
     private transient boolean malformed = false;
 
     public void addCalls(List<LogEntry> entry) {

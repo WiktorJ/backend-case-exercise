@@ -1,4 +1,4 @@
-package exe;
+package exercise;
 
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
@@ -10,11 +10,12 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 
 public class ConfigHolder {
 
-    private ConfigHolder(){}
+    private ConfigHolder() {
+    }
 
     private static class LazyHolder {
 
-        public static final Configuration config = init();
+        static final Configuration config = init();
 
         private static Configuration init() {
             Parameters params = new Parameters();
@@ -30,7 +31,7 @@ public class ConfigHolder {
         }
     }
 
-    public static Configuration getConfig(){
+    public static Configuration getConfig() {
         return LazyHolder.config;
     }
 }

@@ -1,6 +1,7 @@
-package exe.input;
+package exercise.input;
 
-import exe.ConfigHolder;
+import exercise.ConfigHolder;
+import exercise.stats.StatisticsHolder;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -36,6 +37,7 @@ public class FileInputReader implements InputReader {
             String line;
             while ((line = reader.readLine()) != null) {
                 inputQueue.put(line);
+                StatisticsHolder.getInstance().reportLineRead();
             }
         } catch (IOException | InterruptedException e) {
             //TODO: Handle

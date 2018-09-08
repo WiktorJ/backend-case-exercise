@@ -1,6 +1,5 @@
-package exe;
+package exercise;
 
-import exe.LogEntry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

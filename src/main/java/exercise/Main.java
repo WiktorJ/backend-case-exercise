@@ -1,11 +1,12 @@
-package exe;
+package exercise;
 
-import exe.input.FileInputReader;
-import exe.input.InputReader;
-import exe.input.StardartInputReader;
-import exe.output.FileOutputWriter;
-import exe.output.OutputWriter;
-import exe.output.StardartOutputWriter;
+import exercise.input.FileInputReader;
+import exercise.input.InputReader;
+import exercise.input.StardartInputReader;
+import exercise.output.FileOutputWriter;
+import exercise.output.OutputWriter;
+import exercise.output.StardartOutputWriter;
+import exercise.stats.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -13,7 +14,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration2.Configuration;
 
 import java.io.IOException;
 import java.util.List;
@@ -50,6 +50,14 @@ public class Main {
                         .required(false)
                         .build()
         );
+        options.addOption(
+                Option.builder("e")
+                        .longOpt("errorOutput")
+                        .hasArg(true)
+                        .desc("Path to error output file")
+                        .required(false)
+                        .build()
+        );
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -73,15 +81,20 @@ public class Main {
 
 
         long startTime = System.nanoTime();
+        StatisticsHolder.getInstance().setStartTime(startTime);
         CommandLine cmd = getParser(args);
         String inputFilePath = cmd.getOptionValue("input");
         String outputFilePath = cmd.getOptionValue("output");
+        String errorOutputFilePath = cmd.getOptionValue("errorOutput");
 
         BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("inputQueueSize", 50));
         BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("outputQueueSize", 1000));
 
         InputReader inputReader = inputFilePath == null ? new StardartInputReader(inputQueue) : new FileInputReader(inputQueue, inputFilePath);
         OutputWriter outputWriter = outputFilePath == null ? new StardartOutputWriter(outputQueue) : new FileOutputWriter(outputQueue, outputFilePath);
+        if (errorOutputFilePath != null) {
+            StatisticsHolder.getInstance().setStatisticWriter(new FileStatisticWriter(errorOutputFilePath));
+        }
 
         int availableProcessors = Runtime.getRuntime().availableProcessors() - 2; //Subtract two threads doing io
         availableProcessors = availableProcessors < 2 ? 2 : availableProcessors; //We need minimum 4 threads (be design)
@@ -112,8 +125,14 @@ public class Main {
         outputWriter.setStopFlag();
         executorService.shutdown();
         executorService.shutdownNow();
+        //TODO: handle orphans at the end
         long endTime = System.nanoTime();
-
+        StatisticsHolder.getInstance().accept(new OutputStatistic());
+        StatisticsHolder.getInstance().accept(new InputStatistic());
+        StatisticsHolder.getInstance().accept(new CounterStatistic());
+        StatisticsHolder.getInstance().accept(new AveragesStatistics());
+        StatisticsHolder.getInstance().publishStatistics();
+        //write orphans id
         System.out.println("Duration: " + (endTime - startTime) / 1000000 + "ms");
 
     }

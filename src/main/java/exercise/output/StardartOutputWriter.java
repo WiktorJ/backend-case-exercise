@@ -1,10 +1,10 @@
-package exe.output;
+package exercise.output;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import exe.TraceRoot;
+import exercise.TraceRoot;
+import exercise.stats.StatisticsHolder;
 
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
@@ -21,28 +21,25 @@ public class StardartOutputWriter extends OutputWriter {
     }
 
 
-
     @Override
     public void run() {
         while (continueWriting()) {
             try {
                 System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(logQueue.take()));
+                StatisticsHolder.getInstance().reportLineWritten();
+                if (stopGracefully()) {
+                    ArrayList<TraceRoot> logs = new ArrayList<>(logQueue.size());
+                    logQueue.drainTo(logs);
+                    for (TraceRoot log : logs) {
+                        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(log));
+                        StatisticsHolder.getInstance().reportLineWritten();
+                    }
+                }
             } catch (InterruptedException | JsonProcessingException e) {
                 //TODO: Handle
                 e.printStackTrace();
             }
 
-            if (stopGracefully()) {
-                ArrayList<TraceRoot> logs = new ArrayList<>(logQueue.size());
-                logQueue.drainTo(logs);
-                for (TraceRoot log : logs) {
-                    try {
-                        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(log));
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
         }
     }
 }

@@ -1,4 +1,6 @@
-package exe;
+package exercise;
+
+import exercise.stats.StatisticsHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+
 public class Dispatcher implements Runnable {
 
     private static long ORPHANS_THRESHOLD = ConfigHolder.getConfig().getInt("orphansThreshold", 3000);
@@ -20,7 +23,7 @@ public class Dispatcher implements Runnable {
     private final ConcurrentHashMap<String, TraceStateHolder> map;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
     private final BlockingQueue<TraceRoot> outputQueue;
-    private BlockingQueue<String> inputQueue;
+    private final BlockingQueue<String> inputQueue;
     private volatile boolean stop = false;
     private volatile boolean stopGracefully = true;
 
@@ -39,19 +42,17 @@ public class Dispatcher implements Runnable {
 
     @Override
     public void run() {
-        try {
-            while (!stop) {
+        while (!stop) {
+            try {
                 runDispatch(inputQueue.take());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            if (stopGracefully) {
-                ArrayList<String> logs = new ArrayList<>(inputQueue.size());
-                inputQueue.drainTo(logs);
-                for (String rawEntry : logs) {
-                    runDispatch(rawEntry);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        }
+        if (stopGracefully) {
+            ArrayList<String> logs = new ArrayList<>(inputQueue.size());
+            inputQueue.drainTo(logs);
+            logs.forEach(this::runDispatch);
         }
     }
 
@@ -59,6 +60,8 @@ public class Dispatcher implements Runnable {
         LogEntry logEntry = Utils.createDaoFromLog(rawEntry);
         if (!logEntry.isMalformed()) {
             dispatchEntry(logEntry);
+        } else {
+            StatisticsHolder.getInstance().reportMalformed();
         }
     }
 
@@ -80,11 +83,12 @@ public class Dispatcher implements Runnable {
 
         SortedMap<Long, List<String>> suspectedOrphans = orphanMap.tailMap(logEntry.getEndEpoch() - ORPHANS_THRESHOLD);
         for (Map.Entry<Long, List<String>> entry : suspectedOrphans.entrySet()) {
-            for (String s : entry.getValue()) {
-                TraceStateHolder holder = map.get(s);
+            for (String traceId : entry.getValue()) {
+                TraceStateHolder holder = map.get(traceId);
                 if (holder != null && !holder.isNullArrived() && logEntry.getEndEpoch() - ORPHANS_THRESHOLD > holder.getLatestEndTimestamp()) {
-                    System.err.println("ORPHANE: " + s + " " + holder + " \n" + logEntry);
-                    map.remove(s);
+                    StatisticsHolder.getInstance().reportOrphan(holder.getEntries().keySet(), traceId);
+                    System.err.println("ORPHANE: " + traceId + " " + holder + " \n");
+                    map.remove(traceId);
                 }
             }
             orphanMap.remove(entry.getKey());

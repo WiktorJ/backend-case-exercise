@@ -1,4 +1,5 @@
-package exe.output;
+package exercise.output;
+
 
 public abstract class OutputWriter implements Runnable {
 

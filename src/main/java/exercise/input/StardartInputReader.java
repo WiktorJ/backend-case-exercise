@@ -1,11 +1,13 @@
-package exe.input;
+package exercise.input;
+
+import exercise.stats.StatisticsHolder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 
-public class StardartInputReader implements exe.input.InputReader {
+public class StardartInputReader implements exercise.input.InputReader {
 
     private static final String EXIT_COMMAND = "exit";
 
@@ -28,6 +30,7 @@ public class StardartInputReader implements exe.input.InputReader {
             String line;
             while (!(line = reader.readLine()).equals(EXIT_COMMAND)) {
                 inputQueue.put(line);
+                StatisticsHolder.getInstance().reportLineRead();
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

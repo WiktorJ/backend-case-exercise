@@ -1,4 +1,4 @@
-package exe;
+package exercise;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -15,7 +15,7 @@ public class Utils {
     public static LogEntry createDaoFromLog(String logEntry) {
         String[] parts = logEntry.split(" ");
         if (parts.length != 5) {
-            return returnMalformedLogEntry(String.format("Number of log elements %s, expected %s", parts.length, 5));
+            return returnMalformedLogEntry(String.format("Number of log elements %s, expected %s", parts.length, 5), logEntry);
         }
 
         try {
@@ -23,7 +23,7 @@ public class Utils {
             LocalDateTime endTime = LocalDateTime.parse(parts[1], dtf);
             String[] spans = parts[4].split("->");
             if (spans.length != 2) {
-                return returnMalformedLogEntry(String.format("Wrong format of span ids. Expected 'callerSpan->span'. Received: '%s'", parts[4]));
+                return returnMalformedLogEntry(String.format("Wrong format of span ids. Expected 'callerSpan->span'. Received: '%s'", parts[4]), logEntry);
             }
             return LogEntry.builder()
                     .start(parts[0])
@@ -43,14 +43,15 @@ public class Utils {
                             parts[0],
                             parts[1],
                             DATE_FORMAT
-                    ));
+                    ), logEntry);
         }
 
     }
 
-    private static LogEntry returnMalformedLogEntry(String reason) {
-        //TODO stats
-        System.out.println(reason);
+    private static LogEntry returnMalformedLogEntry(String reason, String entry) {
+        System.err.println(
+                String.format("Malformed log: %s, reason: %s", entry, reason)
+        );
         return LogEntry.builder().malformed(true).build();
     }
 }

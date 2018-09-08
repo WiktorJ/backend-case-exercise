@@ -1,11 +1,12 @@
-package exe.output;
+package exercise.output;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exe.ConfigHolder;
-import exe.TraceRoot;
+import exercise.ConfigHolder;
+import exercise.TraceRoot;
+import exercise.stats.StatisticsHolder;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -44,6 +45,7 @@ public class FileOutputWriter extends OutputWriter {
                 try {
 
                     this.objectMapper.writeValue(writer, logQueue.take());
+                    StatisticsHolder.getInstance().reportLineWritten();
                 } catch (InterruptedException e) {
                     //TODO: Handle
                     e.printStackTrace();
@@ -54,6 +56,7 @@ public class FileOutputWriter extends OutputWriter {
                 ArrayList<TraceRoot> logs = new ArrayList<>(logQueue.size());
                 logQueue.drainTo(logs);
                 for (TraceRoot log : logs) {
+                    StatisticsHolder.getInstance().reportLineWritten();
                     this.objectMapper.writeValue(writer, log);
                 }
             }
