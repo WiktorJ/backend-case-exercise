@@ -18,11 +18,11 @@ To appropriate version if java 10 is not available.
 
 ## Overview
 
-Application consist four main parts:
-* `InputReader` - File or stdin
-* `Dispatcher` - Responsible for transforming raw strings into domain object as well as detecting orphans (some of them)
-* `Assembler` - Receives finished traces, assemble them to correct hierarchy and puts request to serialize it
-* `OutputWriter` - Serialize trace from objects to json (file or stdout)
+Application of consist four main parts:
+* `InputReader` - File or stdin.
+* `Dispatcher` - Responsible for transforming raw strings into domain object as well as detecting orphans (some of them).
+* `Assembler` - Receives finished traces, assemble them to correct hierarchy and puts request to serialize them.
+* `OutputWriter` - Serialize trace from objects to json (file or stdout).
 
 Beside that `StatisticsHolder` and few `StatisticsCalculators` are responsible for gathering and calculating statistics about application.  
 
