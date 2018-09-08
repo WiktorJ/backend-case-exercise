@@ -1,5 +1,6 @@
-package exercise;
+package exercise.domain;
 
+import exercise.domain.LogEntry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

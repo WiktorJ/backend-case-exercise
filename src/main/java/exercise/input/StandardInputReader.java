@@ -1,19 +1,24 @@
 package exercise.input;
 
+import exercise.exceptions.IORuntimeException;
 import exercise.stats.StatisticsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 
-public class StardartInputReader implements exercise.input.InputReader {
+public class StandardInputReader implements exercise.input.InputReader {
+    private static Logger logger = LoggerFactory.getLogger(StandardInputReader.class);
+
 
     private static final String EXIT_COMMAND = "exit";
 
     private final BlockingQueue<String> inputQueue;
 
-    public StardartInputReader(BlockingQueue<String> inputQueue) {
+    public StandardInputReader(BlockingQueue<String> inputQueue) {
         this.inputQueue = inputQueue;
     }
 
@@ -33,7 +38,8 @@ public class StardartInputReader implements exercise.input.InputReader {
                 StatisticsHolder.getInstance().reportLineRead();
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Error while reading from stdin", e);
+            throw new IORuntimeException("Error while reading from stdin", e);
         }
     }
 }

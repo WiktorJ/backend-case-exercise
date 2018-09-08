@@ -1,7 +1,10 @@
 package exercise.input;
 
 import exercise.ConfigHolder;
+import exercise.exceptions.IORuntimeException;
 import exercise.stats.StatisticsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -11,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 
 public class FileInputReader implements InputReader {
+
+    private static Logger logger = LoggerFactory.getLogger(FileInputReader.class);
 
     private static final int BUFFER_SIZE = ConfigHolder.getConfig().getInt("fileInputBufferSize", 65536);
 
@@ -27,7 +32,6 @@ public class FileInputReader implements InputReader {
 
     @Override
     public void run() {
-        //  TODO: size of buffer configurable
         try (BufferedReader reader =
                      new BufferedReader(
                              new InputStreamReader(
@@ -40,8 +44,8 @@ public class FileInputReader implements InputReader {
                 StatisticsHolder.getInstance().reportLineRead();
             }
         } catch (IOException | InterruptedException e) {
-            //TODO: Handle
-            e.printStackTrace();
+            logger.error("Error while reading file", e);
+            throw new IORuntimeException("Error while reading file", e);
         }
     }
 }

@@ -1,4 +1,10 @@
-package exercise;
+package exercise.utils;
+
+import exercise.ConfigHolder;
+import exercise.domain.LogEntry;
+import exercise.stats.FileStatisticWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -6,6 +12,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class Utils {
+
+    private static Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String DATE_FORMAT = ConfigHolder.getConfig().getString("dateFormat", "yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'");
 
@@ -49,9 +57,7 @@ public class Utils {
     }
 
     private static LogEntry returnMalformedLogEntry(String reason, String entry) {
-        System.err.println(
-                String.format("Malformed log: %s, reason: %s", entry, reason)
-        );
+        logger.warn("Malformed log: {}, reason: {}", entry, reason);
         return LogEntry.builder().malformed(true).build();
     }
 }

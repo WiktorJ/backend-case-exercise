@@ -1,6 +1,12 @@
-package exercise;
+package exercise.processing;
 
+import exercise.domain.LogEntry;
+import exercise.domain.TraceRoot;
+import exercise.domain.TraceStateHolder;
+import exercise.output.StandardOutputWriter;
 import exercise.stats.StatisticsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -13,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Assembler implements Runnable {
+
+    private static Logger logger = LoggerFactory.getLogger(Assembler.class);
 
 
     private final BlockingQueue<TraceRoot> outputQueue;
@@ -61,8 +69,7 @@ public class Assembler implements Runnable {
                 StatisticsHolder.getInstance().reportTrace();
                 outputQueue.put(new TraceRoot(root.get().getTraceId(), root.get()));
             } catch (InterruptedException e) {
-                //TODO: Handle
-                e.printStackTrace();
+                logger.warn("Interruption while assembling trace with id: {}", traceId, e);
             }
         } else {
             StatisticsHolder.getInstance().reportOrphan(logMap.keySet(), traceId);

@@ -5,8 +5,11 @@ import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exercise.ConfigHolder;
-import exercise.TraceRoot;
+import exercise.domain.TraceRoot;
+import exercise.exceptions.IORuntimeException;
 import exercise.stats.StatisticsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -17,6 +20,8 @@ import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
 public class FileOutputWriter extends OutputWriter {
+
+    private static Logger logger = LoggerFactory.getLogger(FileOutputWriter.class);
 
     private static final int BUFFER_SIZE = ConfigHolder.getConfig().getInt("fileOutputBufferSize", 65536);
     private BlockingQueue<TraceRoot> logQueue;
@@ -33,9 +38,6 @@ public class FileOutputWriter extends OutputWriter {
 
     @Override
     public void run() {
-        //  TODO: size of buffer configurable
-        //  TODO: configure charset
-        //  TODO: If reading is blocking try with fileChannel, or without buffer
         try (JsonGenerator writer = this.objectMapper.getFactory().createGenerator(
                 new BufferedWriter(
                         new OutputStreamWriter(
@@ -47,8 +49,7 @@ public class FileOutputWriter extends OutputWriter {
                     this.objectMapper.writeValue(writer, logQueue.take());
                     StatisticsHolder.getInstance().reportLineWritten();
                 } catch (InterruptedException e) {
-                    //TODO: Handle
-                    e.printStackTrace();
+                    logger.info("Interruption while writing to file, continueWriting = {}", continueWriting(), e);
                 }
 
             }
@@ -61,8 +62,8 @@ public class FileOutputWriter extends OutputWriter {
                 }
             }
         } catch (IOException e) {
-            //TODO: Handle
-            e.printStackTrace();
+            logger.error("Error while writing to file", e);
+            throw new IORuntimeException("Error while writing to file", e);
         }
     }
 }

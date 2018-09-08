@@ -1,6 +1,11 @@
-package exercise;
+package exercise.processing;
 
+import exercise.*;
+import exercise.domain.LogEntry;
+import exercise.domain.TraceRoot;
+import exercise.domain.TraceStateHolder;
 import exercise.stats.StatisticsHolder;
+import exercise.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;

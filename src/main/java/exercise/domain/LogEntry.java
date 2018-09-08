@@ -1,4 +1,4 @@
-package exercise;
+package exercise.domain;
 
 import lombok.Builder;
 import lombok.Data;

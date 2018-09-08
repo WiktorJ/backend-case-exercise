@@ -1,11 +1,14 @@
 package exercise;
 
+import exercise.domain.TraceRoot;
+import exercise.domain.TraceStateHolder;
 import exercise.input.FileInputReader;
 import exercise.input.InputReader;
-import exercise.input.StardartInputReader;
+import exercise.input.StandardInputReader;
 import exercise.output.FileOutputWriter;
 import exercise.output.OutputWriter;
-import exercise.output.StardartOutputWriter;
+import exercise.output.StandardOutputWriter;
+import exercise.processing.Dispatcher;
 import exercise.stats.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -90,8 +93,8 @@ public class Main {
         BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("inputQueueSize", 50));
         BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("outputQueueSize", 1000));
 
-        InputReader inputReader = inputFilePath == null ? new StardartInputReader(inputQueue) : new FileInputReader(inputQueue, inputFilePath);
-        OutputWriter outputWriter = outputFilePath == null ? new StardartOutputWriter(outputQueue) : new FileOutputWriter(outputQueue, outputFilePath);
+        InputReader inputReader = inputFilePath == null ? new StandardInputReader(inputQueue) : new FileInputReader(inputQueue, inputFilePath);
+        OutputWriter outputWriter = outputFilePath == null ? new StandardOutputWriter(outputQueue) : new FileOutputWriter(outputQueue, outputFilePath);
         if (errorOutputFilePath != null) {
             StatisticsHolder.getInstance().setStatisticWriter(new FileStatisticWriter(errorOutputFilePath));
         }
@@ -105,34 +108,40 @@ public class Main {
 
         ConcurrentHashMap<String, TraceStateHolder> map = new ConcurrentHashMap<>();
         NavigableMap<Long, List<String>> orphanMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
+
+        ExecutorService inputExecutor = Executors.newSingleThreadExecutor();
+        inputExecutor.execute(inputReader);
+
+        ExecutorService outputExecutor = Executors.newSingleThreadExecutor();
+        outputExecutor.execute(outputWriter);
+
         Dispatcher dispatcher = new Dispatcher(orphanMap, map, assemblerScheduler, outputQueue, inputQueue);
-
         dispatcherScheduler.execute(dispatcher);
         dispatcherScheduler.execute(dispatcher);
         dispatcherScheduler.execute(dispatcher);
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(inputReader);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(outputWriter);
-        executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
+        inputExecutor.shutdown();
+        inputExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
         dispatcher.setStopFlag();
         dispatcherScheduler.shutdownNow();
         dispatcherScheduler.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
         assemblerScheduler.shutdown();
         assemblerScheduler.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
         outputWriter.setStopFlag();
-        executorService.shutdown();
-        executorService.shutdownNow();
-        //TODO: handle orphans at the end
+        outputExecutor.shutdown();
+        outputExecutor.shutdownNow();
+
         long endTime = System.nanoTime();
         StatisticsHolder.getInstance().accept(new OutputStatistic());
         StatisticsHolder.getInstance().accept(new InputStatistic());
         StatisticsHolder.getInstance().accept(new CounterStatistic());
         StatisticsHolder.getInstance().accept(new AveragesStatistics());
         StatisticsHolder.getInstance().publishStatistics();
-        //write orphans id
+
         System.out.println("Duration: " + (endTime - startTime) / 1000000 + "ms");
 
     }
