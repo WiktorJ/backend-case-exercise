@@ -20,6 +20,7 @@ public class LogEntry implements Serializable, Comparable<LogEntry> {
     private transient final Long startEpoch;
     private transient final String traceId;
     private transient final String callerSpan;
+    private transient boolean malformed = false;
 
     public void addCalls(List<LogEntry> entry) {
         calls.addAll(entry);

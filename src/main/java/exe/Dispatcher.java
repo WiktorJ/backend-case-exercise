@@ -41,14 +41,13 @@ public class Dispatcher implements Runnable {
     public void run() {
         try {
             while (!stop) {
-                dispatchEntry(inputQueue.take());
+                runDispatch(inputQueue.take());
             }
             if (stopGracefully) {
                 ArrayList<String> logs = new ArrayList<>(inputQueue.size());
                 inputQueue.drainTo(logs);
-                System.out.println(logs.size());
-                for (String log : logs) {
-                    dispatchEntry(log);
+                for (String rawEntry : logs) {
+                    runDispatch(rawEntry);
                 }
             }
         } catch (Exception e) {
@@ -56,10 +55,14 @@ public class Dispatcher implements Runnable {
         }
     }
 
-
-    private void dispatchEntry(String rawEntry) {
-
+    private void runDispatch(String rawEntry) {
         LogEntry logEntry = Utils.createDaoFromLog(rawEntry);
+        if (!logEntry.isMalformed()) {
+            dispatchEntry(logEntry);
+        }
+    }
+
+    private void dispatchEntry(LogEntry logEntry) {
 
         orphanMap.computeIfAbsent(logEntry.getEndEpoch(), (key) -> new CopyOnWriteArrayList<>()).add(logEntry.getTraceId());
 
