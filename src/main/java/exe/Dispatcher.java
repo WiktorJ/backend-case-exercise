@@ -64,7 +64,7 @@ public class Dispatcher implements Runnable {
         orphanMap.computeIfAbsent(logEntry.getEndEpoch(), (key) -> new CopyOnWriteArrayList<>()).add(logEntry.getTraceId());
 
         TraceStateHolder stateHolder =
-                map.computeIfAbsent(logEntry.getTraceId(), (key) -> new TraceStateHolder(new ConcurrentHashMap<>(), true, logEntry.getEndEpoch()));
+                map.computeIfAbsent(logEntry.getTraceId(), (key) -> new TraceStateHolder(new ConcurrentHashMap<>(), false, logEntry.getEndEpoch()));
         if (stateHolder.getLatestEndTimestamp() < logEntry.getEndEpoch()) {
             stateHolder.setLatestEndTimestamp(logEntry.getEndEpoch());
         }

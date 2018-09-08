@@ -2,6 +2,7 @@ package exe;
 
 import exe.input.FileInputReader;
 import exe.input.InputReader;
+import exe.input.StardartInputReader;
 import exe.output.FileOutputWriter;
 import exe.output.OutputWriter;
 import exe.output.StardartOutputWriter;
@@ -9,7 +10,15 @@ import exe.output.StardartOutputWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -29,14 +38,14 @@ public class Main {
         scheduledThreadPoolExecutor1.execute(dispatcher);
         scheduledThreadPoolExecutor1.execute(dispatcher);
 //
-//        InputReader inputReader = new StardartInputReader(lines);
-        InputReader inputReader = new FileInputReader("/home/wiktor/Downloads/large-log.txt", inputQueue);
+        InputReader inputReader = new StardartInputReader(inputQueue);
+//        InputReader inputReader = new FileInputReader("/home/wiktor/Downloads/large-log.txt", inputQueue);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(inputReader);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-//        OutputWriter outputWriter = new StardartOutputWriter(outputQueue);
-        OutputWriter outputWriter = new FileOutputWriter(outputQueue, "/home/wiktor/Documents/test.txt");
+        OutputWriter outputWriter = new StardartOutputWriter(outputQueue);
+//        OutputWriter outputWriter = new FileOutputWriter(outputQueue, "/home/wiktor/Documents/test.txt");
         executorService.execute(outputWriter);
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
