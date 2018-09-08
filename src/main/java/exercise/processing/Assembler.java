@@ -24,7 +24,7 @@ public class Assembler implements Runnable {
 
 
     private final BlockingQueue<TraceRoot> outputQueue;
-    private String traceId;
+    private final String traceId;
     private final ConcurrentHashMap<String, TraceStateHolder> map;
 
     public Assembler(BlockingQueue<TraceRoot> outputQueue, String traceId, ConcurrentHashMap<String, TraceStateHolder> map) {
@@ -35,7 +35,7 @@ public class Assembler implements Runnable {
 
     @Override
     public void run() {
-        Map<String, List<LogEntry>> logMap = map.remove(traceId).getEntries();
+        var logMap = map.remove(traceId).getEntries();
         Queue<String> callerSpans = new LinkedList<>();
         callerSpans.offer("null");
         Optional<LogEntry> root = logMap.get("null").stream().findFirst();
