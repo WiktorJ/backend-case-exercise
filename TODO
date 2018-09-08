@@ -4,8 +4,8 @@
 --Number of threads derived from number of cores
 --Statistics about orphans, malformed, average size, average depth etc. (orphans counted multiple times)
 --Statistics about progress (lines consumed, consumption rate)
+--Error handling
+--executable jar/maven run
 
-Error handling
 tests
 docs
-executable jar/maven run

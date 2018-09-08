@@ -21,15 +21,7 @@ import org.apache.commons.cli.ParseException;
 import java.io.IOException;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -80,9 +72,7 @@ public class Main {
     }
 
 
-    public static void main(String[] args) throws InterruptedException, IOException {
-
-
+    public static void main(String[] args) throws InterruptedException {
         long startTime = System.nanoTime();
         StatisticsHolder.getInstance().setStartTime(startTime);
         CommandLine cmd = getParser(args);
@@ -120,9 +110,24 @@ public class Main {
         dispatcherScheduler.execute(dispatcher);
         dispatcherScheduler.execute(dispatcher);
 
+        StatisticsHolder.getInstance().accept(new OutputStatistic());
+        StatisticsHolder.getInstance().accept(new InputStatistic());
+        StatisticsHolder.getInstance().accept(new CounterStatistic());
+        StatisticsHolder.getInstance().accept(new AveragesStatistics());
+
+        ScheduledExecutorService statisticsThreadPool = Executors.newScheduledThreadPool(1);
+        statisticsThreadPool.scheduleWithFixedDelay(
+                () -> StatisticsHolder.getInstance().publishStatistics(),
+                ConfigHolder.getConfig().getInt("statisticPublishIntervalSeconds"),
+                ConfigHolder.getConfig().getInt("statisticPublishIntervalSeconds"),
+                TimeUnit.SECONDS
+        );
+
 
         inputExecutor.shutdown();
         inputExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
+        statisticsThreadPool.shutdown();
 
         dispatcher.setStopFlag();
         dispatcherScheduler.shutdownNow();
@@ -136,12 +141,8 @@ public class Main {
         outputExecutor.shutdownNow();
 
         long endTime = System.nanoTime();
-        StatisticsHolder.getInstance().accept(new OutputStatistic());
-        StatisticsHolder.getInstance().accept(new InputStatistic());
-        StatisticsHolder.getInstance().accept(new CounterStatistic());
-        StatisticsHolder.getInstance().accept(new AveragesStatistics());
-        StatisticsHolder.getInstance().publishStatistics();
 
+        StatisticsHolder.getInstance().publishStatistics();
         System.out.println("Duration: " + (endTime - startTime) / 1000000 + "ms");
 
     }

@@ -4,8 +4,11 @@ import exercise.*;
 import exercise.domain.LogEntry;
 import exercise.domain.TraceRoot;
 import exercise.domain.TraceStateHolder;
+import exercise.output.FileOutputWriter;
 import exercise.stats.StatisticsHolder;
 import exercise.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Dispatcher implements Runnable {
+
+    private static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
 
     private static long ORPHANS_THRESHOLD = ConfigHolder.getConfig().getInt("orphansThreshold", 3000);
     private static long NULL_THRESHOLD = ConfigHolder.getConfig().getInt("nullThreshold", 300);
@@ -51,7 +56,7 @@ public class Dispatcher implements Runnable {
             try {
                 runDispatch(inputQueue.take());
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.info("Interruption while writing to file, stop = {}", stop, e);
             }
         }
         if (stopGracefully) {
@@ -92,7 +97,6 @@ public class Dispatcher implements Runnable {
                 TraceStateHolder holder = map.get(traceId);
                 if (holder != null && !holder.isNullArrived() && logEntry.getEndEpoch() - ORPHANS_THRESHOLD > holder.getLatestEndTimestamp()) {
                     StatisticsHolder.getInstance().reportOrphan(holder.getEntries().keySet(), traceId);
-                    System.err.println("ORPHANE: " + traceId + " " + holder + " \n");
                     map.remove(traceId);
                 }
             }
