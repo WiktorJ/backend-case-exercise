@@ -1,8 +1,8 @@
 --Simple command line interface to specify input/output
 --Properties file
 --Improve parsing of input
+--Number of threads derived from number of cores
 
-Number of threads derived from number of cores
 Statistics about orphans, malformed, average size, average depth etc. (orphans counted multiple times)
 Statistics about progress (lines consumed, consumption rate)
 Error handling

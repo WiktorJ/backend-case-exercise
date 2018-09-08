@@ -77,21 +77,26 @@ public class Main {
         String inputFilePath = cmd.getOptionValue("input");
         String outputFilePath = cmd.getOptionValue("output");
 
-//        todo: queue size parametrized
-        BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(50);
-        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(1000);
+        BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("inputQueueSize", 50));
+        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(ConfigHolder.getConfig().getInt("outputQueueSize", 1000));
 
         InputReader inputReader = inputFilePath == null ? new StardartInputReader(inputQueue) : new FileInputReader(inputQueue, inputFilePath);
         OutputWriter outputWriter = outputFilePath == null ? new StardartOutputWriter(outputQueue) : new FileOutputWriter(outputQueue, outputFilePath);
 
-        NavigableMap<Long, List<String>> orphanMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
+        int availableProcessors = Runtime.getRuntime().availableProcessors() - 2; //Subtract two threads doing io
+        availableProcessors = availableProcessors < 2 ? 2 : availableProcessors; //We need minimum 4 threads (be design)
+        int halfCores = (availableProcessors + 1) / 2; // in case somehow we have odd number
+
+        ScheduledThreadPoolExecutor assemblerScheduler = new ScheduledThreadPoolExecutor(halfCores, new ThreadPoolExecutor.CallerRunsPolicy());
+        ThreadPoolExecutor dispatcherScheduler = new ThreadPoolExecutor(halfCores, halfCores, 0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(halfCores));
+
         ConcurrentHashMap<String, TraceStateHolder> map = new ConcurrentHashMap<>();
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor1 = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
-        Dispatcher dispatcher = new Dispatcher(orphanMap, map, scheduledThreadPoolExecutor, outputQueue, inputQueue);
-        scheduledThreadPoolExecutor1.execute(dispatcher);
-        scheduledThreadPoolExecutor1.execute(dispatcher);
-        scheduledThreadPoolExecutor1.execute(dispatcher);
+        NavigableMap<Long, List<String>> orphanMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
+        Dispatcher dispatcher = new Dispatcher(orphanMap, map, assemblerScheduler, outputQueue, inputQueue);
+
+        dispatcherScheduler.execute(dispatcher);
+        dispatcherScheduler.execute(dispatcher);
+        dispatcherScheduler.execute(dispatcher);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(inputReader);
@@ -100,16 +105,16 @@ public class Main {
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         dispatcher.setStopFlag();
-        scheduledThreadPoolExecutor1.shutdownNow();
-        scheduledThreadPoolExecutor1.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-        scheduledThreadPoolExecutor.shutdown();
-        scheduledThreadPoolExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        dispatcherScheduler.shutdownNow();
+        dispatcherScheduler.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        assemblerScheduler.shutdown();
+        assemblerScheduler.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         outputWriter.setStopFlag();
         executorService.shutdown();
         executorService.shutdownNow();
         long endTime = System.nanoTime();
 
-        System.out.println("Duration: " + (endTime - startTime)/1000000 + "ms");
+        System.out.println("Duration: " + (endTime - startTime) / 1000000 + "ms");
 
     }
 }
