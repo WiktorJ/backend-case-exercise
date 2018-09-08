@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Dispatcher implements Runnable {
 
-    private static long ORPHANE_THRESHOLD = 3000;
-    private static long NULL_THRESHOLD = 300;
+    private static long ORPHANS_THRESHOLD = ConfigHolder.getConfig().getInt("orphansThreshold", 3000);
+    private static long NULL_THRESHOLD = ConfigHolder.getConfig().getInt("nullThreshold", 300);
 
     private final NavigableMap<Long, List<String>> orphanMap;
     private final ConcurrentHashMap<String, TraceStateHolder> map;
@@ -75,11 +75,11 @@ public class Dispatcher implements Runnable {
             scheduledThreadPoolExecutor.schedule(new Assembler(outputQueue, logEntry.getTraceId(), map), NULL_THRESHOLD, TimeUnit.MILLISECONDS);
         }
 
-        SortedMap<Long, List<String>> suspectedOrphans = orphanMap.tailMap(logEntry.getEndEpoch() - ORPHANE_THRESHOLD);
+        SortedMap<Long, List<String>> suspectedOrphans = orphanMap.tailMap(logEntry.getEndEpoch() - ORPHANS_THRESHOLD);
         for (Map.Entry<Long, List<String>> entry : suspectedOrphans.entrySet()) {
             for (String s : entry.getValue()) {
                 TraceStateHolder holder = map.get(s);
-                if (holder != null && !holder.isNullArrived() && logEntry.getEndEpoch() - ORPHANE_THRESHOLD > holder.getLatestEndTimestamp()) {
+                if (holder != null && !holder.isNullArrived() && logEntry.getEndEpoch() - ORPHANS_THRESHOLD > holder.getLatestEndTimestamp()) {
                     System.err.println("ORPHANE: " + s + " " + holder + " \n" + logEntry);
                     map.remove(s);
                 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exe.ConfigHolder;
 import exe.TraceRoot;
 
 import java.io.BufferedWriter;
@@ -16,6 +17,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class FileOutputWriter extends OutputWriter {
 
+    private static final int BUFFER_SIZE = ConfigHolder.getConfig().getInt("fileOutputBufferSize", 65536);
     private BlockingQueue<TraceRoot> logQueue;
     private final String path;
     private final ObjectMapper objectMapper;
@@ -33,7 +35,10 @@ public class FileOutputWriter extends OutputWriter {
         //  TODO: size of buffer configurable
         //  TODO: configure charset
         //  TODO: If reading is blocking try with fileChannel, or without buffer
-        try (JsonGenerator writer = this.objectMapper.getFactory().createGenerator(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(this.path), StandardCharsets.UTF_8)))) {
+        try (JsonGenerator writer = this.objectMapper.getFactory().createGenerator(
+                new BufferedWriter(
+                        new OutputStreamWriter(
+                                new FileOutputStream(this.path), StandardCharsets.UTF_8), BUFFER_SIZE))) {
             writer.setPrettyPrinter(new MinimalPrettyPrinter("\n"));
             while (continueWriting()) {
                 try {

@@ -8,7 +8,9 @@ import java.util.ArrayList;
 
 public class Utils {
 
-    private final static DateTimeFormatter dtf  = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'");
+    private static final String DATE_FORMAT = ConfigHolder.getConfig().getString("dateFormat","yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'" );
+
+    private final static DateTimeFormatter dtf  = DateTimeFormatter.ofPattern(DATE_FORMAT);
 
 
     public static LogEntry createDaoFromLog(String logEntry) {
