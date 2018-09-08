@@ -25,3 +25,6 @@ Application consist four main parts:
 * `OutputWriter` - Serialize trace from objects to json (file or stdout)
 
 Beside that `StatisticsHolder` and few `StatisticsCalculators` are responsible for gathering and calculating statistics about application.  
+
+Simplified diagram:
+![diagram](diagrams/simple_flow.jpg)
