@@ -6,6 +6,13 @@ import exe.input.StardartInputReader;
 import exe.output.FileOutputWriter;
 import exe.output.OutputWriter;
 import exe.output.StardartOutputWriter;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,29 +30,72 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
 
+    private static CommandLine getParser(String[] args) {
+        Options options = new Options();
+        Option.builder("i").longOpt("input").hasArg(true).desc("Path to input file").required(false);
+        options.addOption(
+                Option.builder("i")
+                        .longOpt("input")
+                        .hasArg(true)
+                        .desc("Path to input file")
+                        .required(false)
+                        .build()
+        );
+        options.addOption(
+                Option.builder("o")
+                        .longOpt("output")
+                        .hasArg(true)
+                        .desc("Path to output file")
+                        .required(false)
+                        .build()
+        );
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.setWidth(1000);
+        try {
+            return parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp(
+                    "java -jar backend-case-exercise.jar -i path/to/input/file -o path/to/output/file",
+                    "If no file is specified, than standard input/output is used.",
+                    options,
+                    "");
+            System.exit(1);
+        }
+        return null;
+    }
+
 
     public static void main(String[] args) throws InterruptedException, IOException {
-//        todo: queue size parametrized
+
+
         long startTime = System.nanoTime();
+        CommandLine cmd = getParser(args);
+        String inputFilePath = cmd.getOptionValue("input");
+        String outputFilePath = cmd.getOptionValue("output");
+
+//        todo: queue size parametrized
+        BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(50);
+        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(1000);
+
+        InputReader inputReader = inputFilePath == null ? new StardartInputReader(inputQueue) : new FileInputReader(inputQueue, inputFilePath);
+        OutputWriter outputWriter = outputFilePath == null ? new StardartOutputWriter(outputQueue) : new FileOutputWriter(outputQueue, outputFilePath);
+
+
         NavigableMap<Long, List<String>> orphanMap = new ConcurrentSkipListMap<>((key1, key2) -> -Long.compare(key1, key2));
         ConcurrentHashMap<String, TraceStateHolder> map = new ConcurrentHashMap<>();
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor1 = new ScheduledThreadPoolExecutor(3, new ThreadPoolExecutor.CallerRunsPolicy());
-        BlockingQueue<TraceRoot> outputQueue = new ArrayBlockingQueue<>(1000);
-        BlockingQueue<String> inputQueue = new ArrayBlockingQueue<>(50);
         Dispatcher dispatcher = new Dispatcher(orphanMap, map, scheduledThreadPoolExecutor, outputQueue, inputQueue);
         scheduledThreadPoolExecutor1.execute(dispatcher);
         scheduledThreadPoolExecutor1.execute(dispatcher);
         scheduledThreadPoolExecutor1.execute(dispatcher);
-//
-        InputReader inputReader = new StardartInputReader(inputQueue);
-//        InputReader inputReader = new FileInputReader("/home/wiktor/Downloads/large-log.txt", inputQueue);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(inputReader);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        OutputWriter outputWriter = new StardartOutputWriter(outputQueue);
-//        OutputWriter outputWriter = new FileOutputWriter(outputQueue, "/home/wiktor/Documents/test.txt");
         executorService.execute(outputWriter);
         executor.shutdown();
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);

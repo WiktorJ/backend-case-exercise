@@ -13,8 +13,8 @@ public class FileInputReader implements InputReader {
     private BlockingQueue<String> inputQueue;
 
     public FileInputReader(
-            String pathToFile,
-            BlockingQueue<String> inputQueue) {
+            BlockingQueue<String> inputQueue,
+            String pathToFile) {
         this.path = pathToFile;
         this.inputQueue = inputQueue;
     }
